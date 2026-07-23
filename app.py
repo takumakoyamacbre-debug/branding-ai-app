@@ -2,11 +2,47 @@ import asyncio
 import json
 import os
 import re
+import subprocess
+import sys
 import time
 import urllib.parse
+
+# --------------------------------------------------
+# Streamlit Cloud環境用のPlaywrightブラウザ自動インストール処理
+# --------------------------------------------------
+try:
+  from playwright.async_api import async_playwright
+except ImportError:
+  subprocess.run([sys.executable, "-m", "pip", "install", "playwright"])
+  from playwright.async_api import async_playwright
+
+
+def install_playwright_browsers():
+  """Streamlit Cloud環境でChromiumがインストールされていない場合に自動実行"""
+  try:
+    subprocess.run(
+        [sys.executable, "-m", "playwright", "install", "chromium"], check=True
+    )
+    # 依存関係ライブラリもインストール
+    subprocess.run(
+        [
+            sys.executable,
+            "-m",
+            "playwright",
+            "install-deps",
+            "chromium",
+        ],
+        check=False,
+    )
+  except Exception as e:
+    print(f"Playwright install error: {e}")
+
+
+# アプリ起動時にブラウザのセットアップを実行
+install_playwright_browsers()
+
 from google import genai
 from google.genai import types
-from playwright.async_api import async_playwright
 from pptx import Presentation
 from pptx.dml.color import RGBColor
 from pptx.enum.shapes import MSO_SHAPE
@@ -14,6 +50,7 @@ from pptx.enum.text import PP_ALIGN
 from pptx.util import Inches, Pt
 from pydantic import BaseModel, Field
 import streamlit as st
+
 
 # --------------------------------------------------
 # Pydantic スキーマ定義
@@ -70,7 +107,10 @@ async def collect_assets_flexible(
     pdf_saved = True
 
   async with async_playwright() as p:
-    browser = await p.chromium.launch(headless=True)
+    browser = await p.chromium.launch(
+        headless=True,
+        args=["--no-sandbox", "--disable-setuid-sandbox"],  # Linux環境用フラグ
+    )
     context = await browser.new_context(
         user_agent=USER_AGENT,
         viewport={"width": 1920, "height": 1080},
