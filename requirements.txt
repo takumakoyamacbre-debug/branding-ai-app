@@ -1,0 +1,5 @@
+streamlit
+google-genai
+playwright
+python-pptx
+pydantic
