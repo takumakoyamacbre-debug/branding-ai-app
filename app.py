@@ -9,6 +9,7 @@ from playwright.async_api import async_playwright
 from pptx import Presentation
 from pptx.dml.color import RGBColor
 from pptx.enum.shapes import MSO_SHAPE
+from pptx.enum.text import PP_ALIGN  # 追加済み
 from pptx.util import Inches, Pt
 from pydantic import BaseModel, Field
 import streamlit as st
@@ -258,7 +259,6 @@ with st.sidebar:
 
 st.divider()
 
-# セッション状態の初期化
 if "analyzed_data" not in st.session_state:
   st.session_state.analyzed_data = None
 
@@ -272,7 +272,6 @@ with pdf_tab1:
 with pdf_tab2:
   pdf_url = st.text_input("IR資料 (PDF) の直リンクURL")
 
-# --- Step 1: 分析実行ボタン ---
 if st.button("🔍 カラーパレット案を分析・生成する", type="primary", use_container_width=True):
   if not api_key:
     st.error("サイドバーから Gemini API Key を入力してください。")
@@ -294,7 +293,6 @@ if st.button("🔍 カラーパレット案を分析・生成する", type="prim
         status.update(label="✗ エラーが発生しました", state="error")
         st.error(f"エラー詳細: {e}")
 
-# --- Step 2: パレット選択 & スライド生成セクション ---
 if st.session_state.analyzed_data:
   st.divider()
   st.subheader("🎨 生成されたカラーパレット案を選択してください")
@@ -302,12 +300,10 @@ if st.session_state.analyzed_data:
   data = st.session_state.analyzed_data
   palettes = data["design_system"]["color_palettes"]
 
-  # ラジオボタン用に選択肢を作成
   palette_options = [f"【{p['palette_name']}】 (アクセント主色: {p['accent_1']})" for p in palettes]
   selected_label = st.radio("パレット案", options=palette_options)
   selected_index = palette_options.index(selected_label)
 
-  # 選択されたパレットの詳細を視覚的に表示
   chosen_p = palettes[selected_index]
   cols = st.columns(6)
   accents = [chosen_p["accent_1"], chosen_p["accent_2"], chosen_p["accent_3"], chosen_p["accent_4"], chosen_p["accent_5"], chosen_p["accent_6"]]
